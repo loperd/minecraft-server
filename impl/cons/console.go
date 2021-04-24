@@ -2,6 +2,7 @@ package cons
 
 import (
 	"bufio"
+	"github.com/golangmc/minecraft-server/apis/uuid"
 	"io"
 	"os"
 
@@ -106,4 +107,8 @@ func (l *logFileWriter) Write(p []byte) (n int, err error) {
 	// this is going to be messy, but this should convert to string, strip colors, and then write to file. Don't @ me.
 
 	return l.file.Write(p)
+}
+
+func (c *Console) UUID() uuid.UUID {
+	return uuid.TextToUUID(c.Name())
 }

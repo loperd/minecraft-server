@@ -2,8 +2,9 @@ package uuid
 
 import (
 	"encoding/binary"
-
+	"fmt"
 	"github.com/satori/go.uuid"
+	"strings"
 )
 
 type UUID = uuid.UUID
@@ -17,8 +18,30 @@ func NewUUID() UUID {
 	return gen
 }
 
-func TextToUUID(text string) (data UUID, err error) {
-	return uuid.FromString(text)
+func FromString(text string) UUID {
+	result, err := uuid.FromString(text)
+
+	if err != nil {
+		panic(fmt.Errorf("failed to decode uuid for %s: %v\n", text, err))
+	}
+
+	return result
+}
+
+func TextToUUID(text string) UUID {
+	bytes := make([]byte, 16)
+
+	_, err := strings.NewReader(text).Read(bytes)
+	if err != nil {
+		panic(fmt.Errorf("failed to create uuid for %s: %v\n", text, err))
+	}
+
+	result, err := uuid.FromBytes(bytes)
+	if err != nil {
+		panic(fmt.Errorf("failed to create uuid for %s: %v\n", text, err))
+	}
+
+	return result
 }
 
 func BitsToUUID(msb, lsb int64) (data UUID, err error) {

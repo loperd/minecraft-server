@@ -30,6 +30,10 @@ import (
 	impl_event "github.com/golangmc/minecraft-server/impl/game/event"
 )
 
+type Properties struct {
+	OnlineMode bool
+}
+
 type server struct {
 	message chan system.Message
 
@@ -45,10 +49,12 @@ type server struct {
 	packets impl_base.Packets
 
 	players *playerAssociation
+
+	config *conf.ServerConfig
 }
 
-// ==== new ====
-func NewServer(conf conf.ServerConfig) apis.Server {
+// NewServer ==== new ====
+func NewServer(conf *conf.ServerConfig) apis.Server {
 	message := make(chan system.Message)
 
 	console := cons.NewConsole(message)
@@ -60,7 +66,7 @@ func NewServer(conf conf.ServerConfig) apis.Server {
 	join := make(chan impl_base.PlayerAndConnection)
 	quit := make(chan impl_base.PlayerAndConnection)
 
-	packets := prot.NewPackets(tasking, join, quit)
+	packets := prot.NewPackets(conf, tasking, join, quit)
 	network := conn.NewNetwork(conf.Network.Host, conf.Network.Port, packets, message, join, quit)
 
 	command := cmds.NewCommandManager()
@@ -79,6 +85,8 @@ func NewServer(conf conf.ServerConfig) apis.Server {
 		packets: packets,
 		network: network,
 
+		config: conf,
+
 		players: &playerAssociation{
 			uuidToData: make(map[uuid.UUID]ents.Player),
 
@@ -88,7 +96,7 @@ func NewServer(conf conf.ServerConfig) apis.Server {
 	}
 }
 
-// ==== State ====
+// Load ==== State ====
 func (s *server) Load() {
 	apis.SetMinecraftServer(s)
 
@@ -112,7 +120,7 @@ func (s *server) Kill() {
 	s.logging.Info(chat.DarkRed, "server stopped")
 }
 
-// ==== Server ====
+// Logging ==== Server ====
 func (s *server) Logging() *logs.Logging {
 	return s.logging
 }
@@ -216,6 +224,16 @@ func (s *server) stopServerCommand(sender ents.Sender, params []string) {
 	}
 }
 
+func (s *server) setBlockCommand(sender ents.Sender, params []string) {
+	if "ConsoleSender" == sender.Name() {
+		return
+	}
+
+	player := s.PlayerByUUID(sender.UUID())
+
+	player.GetLocation();
+}
+
 func (s *server) versionCommand(sender ents.Sender, params []string) {
 	sender.SendMessage(s.ServerVersion())
 }
@@ -227,9 +245,12 @@ func (s *server) loadServer() {
 	s.tasking.Load()
 	s.network.Load()
 
+	s.logRunningStatus()
+
 	s.command.Register("vers", s.versionCommand)
 	s.command.Register("send", s.broadcastCommand)
 	s.command.Register("stop", s.stopServerCommand)
+	s.command.Register("setblock", s.setBlockCommand)
 
 	s.watcher.SubAs(func(event apis_event.PlayerJoinEvent) {
 		s.logging.InfoF("player %s logged in with uuid:%v", event.Player.Name(), event.Player.UUID())
@@ -265,6 +286,15 @@ func (s *server) loadServer() {
 			s.logging.DataF("their client's brand is '%s'", event.Message.(*plugin.Brand).Name)
 		}
 	})
+}
+
+func (s *server) logRunningStatus() {
+	mode := "Offline"
+	if s.config.OnlineMode {
+		mode = "Online"
+	}
+
+	s.logging.InfoF("running in %s mode", mode)
 }
 
 func (s *server) readInputs() {

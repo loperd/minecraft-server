@@ -3,6 +3,7 @@ package mode
 import (
 	"bytes"
 	"fmt"
+	"github.com/golangmc/minecraft-server/impl/conf"
 
 	"github.com/golangmc/minecraft-server/apis/data/chat"
 	"github.com/golangmc/minecraft-server/apis/data/msgs"
@@ -20,10 +21,24 @@ import (
  * login
  */
 
-func HandleState2(watcher util.Watcher, join chan base.PlayerAndConnection) {
+func HandleState2(config *conf.ServerConfig, watcher util.Watcher, join chan base.PlayerAndConnection) {
 
 	watcher.SubAs(func(packet *server.PacketILoginStart, conn base.Connection) {
-		conn.CertifyValues(packet.PlayerName)
+		playerName := packet.PlayerName
+
+		if !config.OnlineMode {
+			playerUuid := uuid.TextToUUID(playerName)
+
+			prof := game.Profile{
+				UUID: playerUuid,
+				Name: playerName,
+			}
+
+			login(prof, conn, join)
+			return
+		}
+
+		conn.CertifyValues(playerName)
 
 		_, public := auth.NewCrypt()
 
@@ -74,13 +89,10 @@ func HandleState2(watcher util.Watcher, join chan base.PlayerAndConnection) {
 				panic(fmt.Errorf("failed to authenticate: %s\n%v\n", conn.CertifyName(), err))
 			}
 
-			uuid, err := uuid.TextToUUID(auth.UUID)
-			if err != nil {
-				panic(fmt.Errorf("failed to decode uuid for %s: %s\n%v\n", conn.CertifyName(), auth.UUID, err))
-			}
+			playerUuid := uuid.FromString(auth.UUID)
 
 			prof := game.Profile{
-				UUID: uuid,
+				UUID: playerUuid,
 				Name: auth.Name,
 			}
 
@@ -92,21 +104,25 @@ func HandleState2(watcher util.Watcher, join chan base.PlayerAndConnection) {
 				})
 			}
 
-			player := ents.NewPlayer(&prof, conn)
-
-			conn.SendPacket(&client.PacketOLoginSuccess{
-				PlayerName: player.Name(),
-				PlayerUUID: player.UUID().String(),
-			})
-
-			conn.SetState(base.PLAY)
-
-			join <- base.PlayerAndConnection{
-				Player:     player,
-				Connection: conn,
-			}
+			login(prof, conn, join)
 		})
 
 	})
 
+}
+
+func login(prof game.Profile, conn base.Connection, join chan base.PlayerAndConnection) {
+	player := ents.NewPlayer(&prof, conn)
+
+	conn.SendPacket(&client.PacketOLoginSuccess{
+		PlayerName: player.Name(),
+		PlayerUUID: player.UUID().String(),
+	})
+
+	conn.SetState(base.PLAY)
+
+	join <- base.PlayerAndConnection{
+		Player:     player,
+		Connection: conn,
+	}
 }

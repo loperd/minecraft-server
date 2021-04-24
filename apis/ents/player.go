@@ -1,6 +1,9 @@
 package ents
 
-import "github.com/golangmc/minecraft-server/apis/game"
+import (
+	"github.com/golangmc/minecraft-server/apis/data"
+	"github.com/golangmc/minecraft-server/apis/game"
+)
 
 type Player interface {
 	EntityLiving
@@ -12,4 +15,6 @@ type Player interface {
 	SetIsOnline(state bool)
 
 	GetProfile() *game.Profile
+
+	GetLocation() data.Location
 }

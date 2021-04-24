@@ -4,6 +4,7 @@ import (
 	"github.com/golangmc/minecraft-server/apis/buff"
 	"github.com/golangmc/minecraft-server/apis/data"
 	"github.com/golangmc/minecraft-server/apis/game"
+	"github.com/golangmc/minecraft-server/apis/uuid"
 	"github.com/golangmc/minecraft-server/impl/base"
 	"github.com/golangmc/minecraft-server/impl/data/client"
 	"github.com/golangmc/minecraft-server/impl/data/plugin"
@@ -153,6 +154,7 @@ func (p *PacketIPlayerAbilities) Pull(reader buff.Buffer, conn base.Connection) 
 type PacketIPlayerPosition struct {
 	Position data.PositionF
 	OnGround bool
+	UniqueId uuid.UUID
 }
 
 func (p *PacketIPlayerPosition) UUID() int32 {
@@ -165,6 +167,7 @@ func (p *PacketIPlayerPosition) Pull(reader buff.Buffer, conn base.Connection) {
 		Y: reader.PullF64(),
 		Z: reader.PullF64(),
 	}
+	p.UniqueId = conn
 
 	p.OnGround = reader.PullBit()
 }

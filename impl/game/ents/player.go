@@ -1,6 +1,7 @@
 package ents
 
 import (
+	"github.com/golangmc/minecraft-server/apis/data"
 	"github.com/golangmc/minecraft-server/apis/data/msgs"
 	"github.com/golangmc/minecraft-server/apis/ents"
 	"github.com/golangmc/minecraft-server/apis/game"
@@ -20,7 +21,9 @@ type player struct {
 
 	conn impl_base.Connection
 
-	mode game.GameMode
+	mode     game.GameMode
+
+	location data.Location
 }
 
 func NewPlayer(prof *game.Profile, conn impl_base.Connection) ents.Player {
@@ -68,4 +71,12 @@ func (p *player) GetProfile() *game.Profile {
 
 func (p *player) SetConn(conn impl_base.Connection) {
 	p.conn = conn
+}
+
+func (p *player) setLocation(loc data.Location) {
+	p.location = loc
+}
+
+func (p *player) GetLocation() data.Location {
+	return p.location
 }

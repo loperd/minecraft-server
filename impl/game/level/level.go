@@ -79,10 +79,10 @@ func (l *level) getChunk(x, z int, generate bool) apis_level.Chunk {
 	return nil
 }
 
-// generates chunks with the normal super-flat style
+// GenSuperFlat generates chunks with the normal super-flat style
 func GenSuperFlat(level apis_level.Level, size int) {
 
-	id := 210
+	id := 174
 	for x := -size; x < size; x++ {
 		for z := -size; z < size; z++ {
 			chunk := level.GetChunk(x, z)

@@ -5,6 +5,7 @@ import (
 	"github.com/golangmc/minecraft-server/apis/task"
 	"github.com/golangmc/minecraft-server/apis/util"
 	"github.com/golangmc/minecraft-server/impl/base"
+	"github.com/golangmc/minecraft-server/impl/conf"
 	"github.com/golangmc/minecraft-server/impl/game/mode"
 	"github.com/golangmc/minecraft-server/impl/prot/server"
 )
@@ -19,7 +20,7 @@ type packets struct {
 	quit chan base.PlayerAndConnection
 }
 
-func NewPackets(tasking *task.Tasking, join chan base.PlayerAndConnection, quit chan base.PlayerAndConnection) base.Packets {
+func NewPackets(config *conf.ServerConfig, tasking *task.Tasking, join chan base.PlayerAndConnection, quit chan base.PlayerAndConnection) base.Packets {
 	packets := &packets{
 		Watcher: util.NewWatcher(),
 
@@ -29,7 +30,7 @@ func NewPackets(tasking *task.Tasking, join chan base.PlayerAndConnection, quit 
 
 	mode.HandleState0(packets)
 	mode.HandleState1(packets)
-	mode.HandleState2(packets, join)
+	mode.HandleState2(config, packets, join)
 	mode.HandleState3(packets, packets.logger, tasking, join, quit)
 
 	return packets

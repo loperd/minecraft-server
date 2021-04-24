@@ -48,7 +48,7 @@ func DefaultResponse() Response {
 		},
 		Players: Players{
 			Max:    10,
-			Online: 1,
+			Online: 0,
 			Sample: []SamplePlayer{
 				{
 					Name: SxtannaName,

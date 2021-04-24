@@ -12,11 +12,11 @@ import (
 func main() {
 	color.NoColor = false
 
-	server := impl.NewServer(mergeWithFlags(conf.DefaultServerConfig))
+	server := impl.NewServer(mergeWithFlags(&conf.DefaultServerConfig))
 	server.Load()
 }
 
-func mergeWithFlags(c conf.ServerConfig) conf.ServerConfig {
+func mergeWithFlags(c *conf.ServerConfig) *conf.ServerConfig {
 	host := flag.String("host",
 		conf.DefaultServerConfig.Network.Host,
 		"the address this server will bind to")
@@ -24,6 +24,10 @@ func mergeWithFlags(c conf.ServerConfig) conf.ServerConfig {
 	port := flag.Int("port",
 		conf.DefaultServerConfig.Network.Port,
 		"the port this server will bind to")
+
+	onlineMode := flag.Bool("mode",
+		conf.DefaultServerConfig.OnlineMode,
+		"the mode which in server will work")
 
 	flag.Parse()
 
@@ -33,6 +37,10 @@ func mergeWithFlags(c conf.ServerConfig) conf.ServerConfig {
 
 	if *port != conf.DefaultServerConfig.Network.Port {
 		c.Network.Port = *port
+	}
+
+	if *onlineMode != conf.DefaultServerConfig.OnlineMode {
+		c.OnlineMode = *onlineMode
 	}
 
 	return c

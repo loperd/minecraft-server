@@ -96,7 +96,7 @@ func HandleState3(watcher util.Watcher, logger *logs.Logging, tasking *task.Task
 
 			conn.SendPacket(&client_packet.PacketOPluginMessage{
 				Message: &plugin.Brand{
-					Name: chat.Translate(fmt.Sprintf("&b%s&r &a%s&r", "GoLangMc", apis.MinecraftServer().ServerVersion())),
+					Name: chat.Translate(fmt.Sprintf("&c&l%s&r &a%s&r", "LoperMC", apis.MinecraftServer().ServerVersion())),
 				},
 			})
 

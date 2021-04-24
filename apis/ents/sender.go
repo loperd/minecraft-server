@@ -6,6 +6,7 @@ import (
 
 type Sender interface {
 	base.Named
+	base.Unique
 
 	SendMessage(message ...interface{})
 }
