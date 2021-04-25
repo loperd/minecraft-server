@@ -2,6 +2,10 @@ package impl
 
 import (
 	"fmt"
+	"github.com/golangmc/minecraft-server/apis/data"
+	apis_level "github.com/golangmc/minecraft-server/apis/game/level"
+	impl_level "github.com/golangmc/minecraft-server/impl/game/level"
+	client_packet "github.com/golangmc/minecraft-server/impl/prot/client"
 	"strconv"
 	"strings"
 	"time"
@@ -51,6 +55,8 @@ type server struct {
 	players *playerAssociation
 
 	config *conf.ServerConfig
+
+	level  apis_level.Level
 }
 
 // NewServer ==== new ====
@@ -100,6 +106,7 @@ func NewServer(conf *conf.ServerConfig) apis.Server {
 func (s *server) Load() {
 	apis.SetMinecraftServer(s)
 
+	go s.loadWorld()
 	go s.loadServer()
 	go s.readInputs()
 
@@ -226,12 +233,57 @@ func (s *server) stopServerCommand(sender ents.Sender, params []string) {
 
 func (s *server) setBlockCommand(sender ents.Sender, params []string) {
 	if _, ok := sender.(*cons.Console); ok {
+		sender.SendMessage("Sorry but you can't execute this command!")
 		return
 	}
 
 	player := s.PlayerByUUID(sender.UUID())
+	loc := player.GetLocation()
 
-	player.GetLocation()
+	x := int(loc.X)
+	y := int(loc.Y)
+	z := int(loc.Z)
+
+	value, _ := strconv.ParseInt(params[0], 10, 16)
+
+	block := s.GetLevel().GetBlock(x, y, z)
+	block.SetBlockType(int(value))
+
+	sender.SendMessage("Trying to set block around you.")
+
+	conn := s.players.uuidToConn[sender.UUID()]
+	for _, chunk := range s.GetLevel().Chunks() {
+		conn.SendPacket(&client_packet.PacketOChunkData{Chunk: chunk})
+	}
+}
+
+func (s *server) teleportCommand(sender ents.Sender, params []string) {
+	if _, ok := sender.(*cons.Console); ok {
+		sender.SendMessage(chat.Translate("&cOnly user can run this command."))
+		return
+	}
+
+	if 3 > len(params) {
+		sender.SendMessage(chat.Translate("&cPlease use example: /tp [x] [y] [z]"))
+		return
+	}
+
+	x, _ := strconv.ParseFloat(params[0], 64)
+	y, _ := strconv.ParseFloat(params[1], 64)
+	z, _ := strconv.ParseFloat(params[2], 64)
+
+	newLoc := data.Location{
+		PositionF: data.PositionF{
+			X: x,
+			Y: y,
+			Z: z,
+		},
+	}
+
+	sender.SendMessage("Trying to teleport you.")
+
+	conn := s.ConnByUUID(sender.UUID())
+	conn.SendPacket(&client_packet.PacketOPlayerLocation{Location: newLoc})
 }
 
 func (s *server) versionCommand(sender ents.Sender, params []string) {
@@ -250,6 +302,7 @@ func (s *server) loadServer() {
 	s.command.Register("vers", s.versionCommand)
 	s.command.Register("send", s.broadcastCommand)
 	s.command.Register("stop", s.stopServerCommand)
+	s.command.Register("tp", s.teleportCommand)
 	s.command.Register("setblock", s.setBlockCommand)
 
 	s.watcher.SubAs(func(event apis_event.PlayerJoinEvent) {
@@ -349,6 +402,17 @@ func (s *server) wait() {
 	}
 
 	s.wait()
+}
+
+func (s *server) loadWorld() {
+	level := impl_level.NewLevel("world")
+	impl_level.GenSuperFlat(level, 6)
+
+	s.level = level
+}
+
+func (s *server) GetLevel() apis_level.Level {
+	return s.level
 }
 
 // ==== players ====

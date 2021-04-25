@@ -154,7 +154,9 @@ func handleReceive(network *network, conn base.Connection, bufI buff.Buffer, buf
 		return
 	}
 
-	network.logger.DataF("GET packet: %d | %v | %v", packetI.UUID(), reflect.TypeOf(packetI), conn.GetState())
+	if packetI.UUID() != 17 {
+		network.logger.DataF("GET packet: %d | %v | %v", packetI.UUID(), reflect.TypeOf(packetI), conn.GetState())
+	}
 
 	// populate incoming packet
 	packetI.Pull(bufI, conn)

@@ -1,10 +1,10 @@
 package uuid
 
 import (
+	"crypto/md5"
 	"encoding/binary"
 	"fmt"
 	"github.com/satori/go.uuid"
-	"strings"
 )
 
 type UUID = uuid.UUID
@@ -29,14 +29,11 @@ func FromString(text string) UUID {
 }
 
 func TextToUUID(text string) UUID {
-	bytes := make([]byte, 16)
+	bytes := md5.Sum([]byte(text))
+	bytes[6] = (bytes[6] & 0x0f) | 0x30
+	bytes[8] = (bytes[8] & 0x3f) | 0x80
 
-	_, err := strings.NewReader(text).Read(bytes)
-	if err != nil {
-		panic(fmt.Errorf("failed to create uuid for %s: %v\n", text, err))
-	}
-
-	result, err := uuid.FromBytes(bytes)
+	result, err := uuid.FromBytes(bytes[:])
 	if err != nil {
 		panic(fmt.Errorf("failed to create uuid for %s: %v\n", text, err))
 	}

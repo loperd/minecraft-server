@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"github.com/golangmc/minecraft-server/apis/game/level"
 	"sync"
 
 	"github.com/golangmc/minecraft-server/apis/cmds"
@@ -36,6 +37,8 @@ type Server interface {
 	ServerVersion() string
 
 	Broadcast(message string)
+
+	GetLevel() level.Level
 }
 
 var instance *Server

@@ -2,6 +2,8 @@ package mode
 
 import (
 	"fmt"
+	apis_base "github.com/golangmc/minecraft-server/apis/base"
+	"strings"
 	"time"
 
 	"github.com/golangmc/minecraft-server/apis"
@@ -16,8 +18,6 @@ import (
 	"github.com/golangmc/minecraft-server/impl/data/client"
 	"github.com/golangmc/minecraft-server/impl/data/plugin"
 	"github.com/golangmc/minecraft-server/impl/data/values"
-	impl_level "github.com/golangmc/minecraft-server/impl/game/level"
-
 	impl_event "github.com/golangmc/minecraft-server/impl/game/event"
 
 	client_packet "github.com/golangmc/minecraft-server/impl/prot/client"
@@ -67,6 +67,38 @@ func HandleState3(watcher util.Watcher, logger *logs.Logging, tasking *task.Task
 		api := apis.MinecraftServer()
 
 		who := api.PlayerByConn(conn)
+
+		text := packet.Message
+
+		if strings.HasPrefix(text, "/") {
+			cmd := strings.TrimLeft(text, "/")
+			args := strings.Split(cmd, " ")
+
+			command := api.Command().Search(args[0])
+
+			if command == nil {
+				who.SendMessage(chat.Translate(fmt.Sprintf("&cCommand with name \"%s\" is undefined", args[0])))
+				return
+			}
+
+			err := apis_base.Attempt(func() {
+				(*command).Evaluate(who, args[1:])
+			})
+
+			if err != nil {
+				api.Logging().Fail(
+					chat.Red, "failed to evaluate ",
+					chat.DarkGray, "`",
+					chat.White, (*command).Name(),
+					chat.DarkGray, "`",
+					chat.Red, ": ", err.Error()[8:])
+				who.SendMessage(chat.Translate("&4An error occurred while executing the command"))
+				return
+			}
+
+			return
+		}
+
 		out := msgs.
 			New(who.Name()).SetColor(chat.White).
 			Add(":").SetColor(chat.Gray).
@@ -86,6 +118,7 @@ func HandleState3(watcher util.Watcher, logger *logs.Logging, tasking *task.Task
 
 	go func() {
 		for conn := range join {
+
 			apis.MinecraftServer().Watcher().PubAs(impl_event.PlayerConnJoinEvent{Conn: conn})
 
 			conn.SendPacket(&client_packet.PacketOJoinGame{
@@ -154,10 +187,7 @@ func HandleState3(watcher util.Watcher, logger *logs.Logging, tasking *task.Task
 
 			conn.SendPacket(&client_packet.PacketOEntityMetadata{Entity: conn.Player})
 
-			level := impl_level.NewLevel("test")
-			impl_level.GenSuperFlat(level, 6)
-
-			for _, chunk := range level.Chunks() {
+			for _, chunk := range apis.MinecraftServer().GetLevel().Chunks() {
 				conn.SendPacket(&client_packet.PacketOChunkData{Chunk: chunk})
 			}
 
