@@ -77,6 +77,13 @@ func HandleState3(watcher util.Watcher, logger *logs.Logging, tasking *task.Task
 		api.Broadcast(out)
 	})
 
+	watcher.SubAs(func(packet *server_packet.PacketIPlayerLocation, conn base.Connection) {
+		api := apis.MinecraftServer()
+		who := api.PlayerByConn(conn)
+
+		who.SetLocation(packet.Location)
+	})
+
 	go func() {
 		for conn := range join {
 			apis.MinecraftServer().Watcher().PubAs(impl_event.PlayerConnJoinEvent{Conn: conn})

@@ -3,6 +3,7 @@ package mode
 import (
 	"bytes"
 	"fmt"
+	"github.com/golangmc/minecraft-server/apis"
 	"github.com/golangmc/minecraft-server/impl/conf"
 
 	"github.com/golangmc/minecraft-server/apis/data/chat"
@@ -27,7 +28,7 @@ func HandleState2(config *conf.ServerConfig, watcher util.Watcher, join chan bas
 		playerName := packet.PlayerName
 
 		if !config.OnlineMode {
-			playerUuid := uuid.TextToUUID(playerName)
+			playerUuid := uuid.TextToUUID("OfflinePlayer:" + playerName)
 
 			prof := game.Profile{
 				UUID: playerUuid,
@@ -112,6 +113,16 @@ func HandleState2(config *conf.ServerConfig, watcher util.Watcher, join chan bas
 }
 
 func login(prof game.Profile, conn base.Connection, join chan base.PlayerAndConnection) {
+	s := apis.MinecraftServer()
+
+	p := s.PlayerByUUID(prof.UUID)
+
+	if p != nil {
+		conn.SendPacket(&client.PacketODisconnect{
+			Reason: *msgs.New(fmt.Sprintf("Player with name \"%s\" already play on the server.", p.Name())).SetColor(chat.Red),
+		})
+	}
+
 	player := ents.NewPlayer(&prof, conn)
 
 	conn.SendPacket(&client.PacketOLoginSuccess{

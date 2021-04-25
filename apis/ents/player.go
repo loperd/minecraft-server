@@ -17,4 +17,5 @@ type Player interface {
 	GetProfile() *game.Profile
 
 	GetLocation() data.Location
+	SetLocation(loc data.Location)
 }

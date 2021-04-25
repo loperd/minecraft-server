@@ -225,13 +225,13 @@ func (s *server) stopServerCommand(sender ents.Sender, params []string) {
 }
 
 func (s *server) setBlockCommand(sender ents.Sender, params []string) {
-	if "ConsoleSender" == sender.Name() {
+	if _, ok := sender.(*cons.Console); ok {
 		return
 	}
 
 	player := s.PlayerByUUID(sender.UUID())
 
-	player.GetLocation();
+	player.GetLocation()
 }
 
 func (s *server) versionCommand(sender ents.Sender, params []string) {
@@ -290,6 +290,7 @@ func (s *server) loadServer() {
 
 func (s *server) logRunningStatus() {
 	mode := "Offline"
+
 	if s.config.OnlineMode {
 		mode = "Online"
 	}

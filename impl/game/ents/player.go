@@ -80,3 +80,7 @@ func (p *player) setLocation(loc data.Location) {
 func (p *player) GetLocation() data.Location {
 	return p.location
 }
+
+func (p *player) SetLocation(loc data.Location) {
+	p.location = loc
+}
