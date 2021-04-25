@@ -2,8 +2,8 @@ package logs
 
 import (
 	"fmt"
+	"github.com/golangmc/minecraft-server/lib"
 	"io"
-	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -123,7 +123,7 @@ func (log *Logging) DataF(format string, a ...interface{}) {
 }
 
 func NewLogging(name string, show ...LogLevel) *Logging {
-	return NewLoggingWith(name, os.Stdout, show...)
+	return NewLoggingWith(name, lib.ReadLine().Stdout(), show...)
 }
 
 func NewLoggingWith(name string, writer io.Writer, show ...LogLevel) *Logging {

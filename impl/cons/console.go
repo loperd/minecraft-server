@@ -1,8 +1,9 @@
 package cons
 
 import (
-	"bufio"
+	"github.com/chzyer/readline"
 	"github.com/golangmc/minecraft-server/apis/uuid"
+	"github.com/golangmc/minecraft-server/lib"
 	"io"
 	"os"
 
@@ -12,8 +13,9 @@ import (
 )
 
 type Console struct {
-	i io.Reader
 	o io.Writer
+
+	rl *readline.Instance
 
 	logger *logs.Logging
 
@@ -31,9 +33,8 @@ func NewConsole(report chan system.Message) *Console {
 		report: report,
 	}
 
-	console.i = io.MultiReader(os.Stdin)
-	console.o = io.MultiWriter(os.Stdout, console.newLogFile("latest.log"))
-
+	console.rl = lib.ReadLine()
+	console.o = io.MultiWriter(console.rl.Stdout(), console.newLogFile("latest.log"))
 	console.logger = logs.NewLoggingWith("console", console.o, logs.EveryLevel...)
 
 	return console
@@ -42,11 +43,20 @@ func NewConsole(report chan system.Message) *Console {
 func (c *Console) Load() {
 	// handle i channel
 	go func() {
-		scanner := bufio.NewScanner(c.i)
+		for {
+			line, err := c.rl.Readline()
 
-		for scanner.Scan() {
-			err := base.Attempt(func() {
-				c.IChannel <- scanner.Text()
+			if err == readline.ErrInterrupt && len(line) != 0 {
+				continue
+			}
+
+			if err == readline.ErrInterrupt || err == io.EOF {
+				c.report <- system.Make(system.STOP, "normal stop")
+				return
+			}
+
+			err = base.Attempt(func() {
+				c.IChannel <- line
 			})
 
 			if err != nil {
@@ -61,6 +71,19 @@ func (c *Console) Load() {
 			c.logger.Info(line)
 		}
 	}()
+
+	go func() {
+		select {
+		case command := <-c.report:
+			switch command.Command {
+			// stop selecting when stop is received
+			case system.STOP:
+				return
+			case system.FAIL:
+				return
+			}
+		}
+	}()
 }
 
 func (c *Console) Kill() {
@@ -70,7 +93,6 @@ func (c *Console) Kill() {
 
 	// save the log file as YYYY-MM-DD-{index}.log{.gz optionally compressed}
 
-	close(c.IChannel)
 	close(c.OChannel)
 }
 

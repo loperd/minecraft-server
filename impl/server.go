@@ -6,6 +6,7 @@ import (
 	apis_level "github.com/golangmc/minecraft-server/apis/game/level"
 	impl_level "github.com/golangmc/minecraft-server/impl/game/level"
 	client_packet "github.com/golangmc/minecraft-server/impl/prot/client"
+	"github.com/golangmc/minecraft-server/lib"
 	"strconv"
 	"strings"
 	"time"
@@ -114,6 +115,7 @@ func (s *server) Load() {
 }
 
 func (s *server) Kill() {
+	lib.ReadLine().Close()
 
 	s.console.Kill()
 	s.command.Kill()
@@ -124,7 +126,7 @@ func (s *server) Kill() {
 	s.message <- system.Make(system.STOP, "normal stop")
 	close(s.message)
 
-	s.logging.Info(chat.DarkRed, "server stopped")
+	s.logging.Info(chat.DarkRed, "Server will be stopped")
 }
 
 // Logging ==== Server ====

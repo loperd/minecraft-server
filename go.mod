@@ -3,6 +3,7 @@ module github.com/golangmc/minecraft-server
 go 1.13
 
 require (
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/fatih/color v1.9.0
 	github.com/hako/durafmt v0.0.0-20191009132224-3f39dc1ed9f4
 	github.com/mattn/go-colorable v0.1.6 // indirect
